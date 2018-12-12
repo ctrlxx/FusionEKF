@@ -1,6 +1,11 @@
 #include <iostream>
 #include "tools.h"
 
+#define EPS 0.0001 // A very small number
+#define EPS2 0.0000001
+
+using namespace std;
+
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using std::vector;
@@ -53,16 +58,25 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
     * Calculate a Jacobian here.
   */
     MatrixXd Hj(3,4);
+
     //recover state parameters
     float px = x_state(0);
     float py = x_state(1);
     float vx = x_state(2);
     float vy = x_state(3);
     
+    if (fabs(px) < EPS and fabs(py) < EPS){
+        px = EPS;
+        py = EPS;
+    }
     //pre-compute a set of terms to avoid repeated calculation
     float c1 = px*px+py*py;
     float c2 = sqrt(c1);
     float c3 = (c1*c2);
+    
+    if(fabs(c1) < EPS2){
+        c1 = EPS2;
+    }
     
     //check division by zero
     if(fabs(c1) < 0.0001){

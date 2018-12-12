@@ -3,6 +3,8 @@
 #include "Eigen/Dense"
 #include <iostream>
 
+#define EPS 0.0001
+
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -54,7 +56,7 @@ FusionEKF::FusionEKF() {
     
     // set measurement noises
     noise_ax = 9;
-    noise_ay = 9;
+    noise_ay = 11;
 }
 
 /**
@@ -77,9 +79,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     */
     
     // first measurement
-    cout << "EKF: " << endl;
+//    cout << "EKF: " << endl;
     ekf_.x_ = VectorXd(4);
-    ekf_.x_ << 1, 1, 1, 1;
+//    ekf_.x_ << 1, 1, 1, 1;
 
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       /**
@@ -89,8 +91,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
         float phi = measurement_pack.raw_measurements_[1];      // bearing: angle between rho and x axis
         float rho_dot = measurement_pack.raw_measurements_[2];  // radial velocity: change of rho
         
-        // ekf_.x_ << rho * cos(phi), rho * sin(phi), rho_dot * cos(phi), rho_dot * sin(phi);
-        // phi is not the direction of the speed, it is better to set vx and vy to 0
+//        ekf_.x_ << rho * cos(phi), rho * sin(phi), rho_dot * cos(phi), rho_dot * sin(phi);
+//        phi is not the direction of the speed, it is better to set vx and vy to 0
         ekf_.x_ << rho * cos(phi), rho * sin(phi), 0, 0;  // x, y, vx, vy
 
     }
@@ -99,6 +101,10 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       Initialize state.
       */
         ekf_.x_ << measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1], 0, 0; // x, y, vx, vy
+    }
+    if (fabs(ekf_.x_(0)) < EPS and fabs(ekf_.x_(1)) < EPS){
+          ekf_.x_(0) = EPS;
+          ekf_.x_(1) = EPS;
     }
     previous_timestamp_ = measurement_pack.timestamp_;
     // done initializing, no need to predict or update
@@ -131,9 +137,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     //set the process covariance matrix Q
     ekf_.Q_ = MatrixXd(4, 4);
     ekf_.Q_ << dt_4/4*noise_ax,0,dt_3/2*noise_ax,0,
-            0,dt_4/4*noise_ay,0,dt_3/2*noise_ay,
-            dt_3/2*noise_ax,0,dt_2*noise_ax,0,
-            0,dt_3/2*noise_ay,0,dt_2*noise_ay;
+               0,dt_4/4*noise_ay,0,dt_3/2*noise_ay,
+               dt_3/2*noise_ax,0,dt_2*noise_ax,0,
+               0,dt_3/2*noise_ay,0,dt_2*noise_ay;
 
   ekf_.Predict();
 
